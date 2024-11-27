@@ -1,0 +1,27 @@
+syntax = "proto3";
+option go_package = "./";
+
+service P2PNetwork {
+    rpc NeighbourList (NeighbourListRequest) returns (NeighbourListResponse){}
+    rpc PeerRegist (PeerRegistRequest) returns (PeerRegistResponse){}
+}
+
+//Message to request the list of active neighbours 
+message NeighbourListRequest {
+    string peer = 1;
+}
+
+//Response message which returns the list of active neighbours
+message NeighbourListResponse {
+    string result = 1;
+}
+
+//Message to register peer in neighbours list
+message PeerRegistRequest {
+    string peer = 1;
+}
+
+//Response message which returns if the process was successfull
+message PeerRegistResponse {
+    string result = 1;
+}
