@@ -1,30 +1,36 @@
 package main
 
 import (
-	"fmt"
 	"goP2PNetwork/p2p"
-	"log"
-	"os"
+	"sync"
 )
 
 func main(){
-	peer := p2p.Peer{
-		UID: "m1",
-		Address: "127.0.0.1:50003",
-		NeighbourList: make([]string, 0),
+    p2p.LocalNode = p2p.Node{
+		UID: p2p.Uid,
+		Address: p2p.LocalAddr,
+		Neighbours: &p2p.NeigbboursData{
+			Data: make([]string, 0),
+			Version: 1,
+		},
 	}
-	peer.NeighbourList = append(peer.NeighbourList, "10.10.1.1")
-	fmt.Print(peer)
-	fmt.Println()
+    p2p.LocalNeighboursMap = p2p.NeighboursMap{
+		Data: &p2p.NeighboursMapData{
+			Address: p2p.LocalAddr,
+			MapPeer: make(map[string]p2p.NeigbboursData),
+		},
+		ValidTimestampMap: struct{Data map[string]int64; Mutex sync.Mutex} {
+			Data: make(map[string]int64),
+		},
+    }
 
+	//peer.Neighbours = append(peer.Neighbours, "10.10.1.1")
+    //mapnode.MapPeer[peer.UID] = peer.Neighbours
 
-	if os.Args[1] == "server" {
-		go p2p.Server()
-	} else if os.Args[1] == "peer" {
-		go p2p.Client(peer)
+	go p2p.Server()
+	go p2p.LocalNode.NodeRegisterClient()
+	go p2p.LocalNeighboursMap.CheckMapEntryExpiration()
+    //go p2p.LocalNeighboursMap.EventGenerator()
 
-	} else {
-		log.Fatalf("node type requires to be peer or server")
-	}
 	select {}
 }
