@@ -7,7 +7,6 @@ import (
 	"goP2PNetwork/config"
 	ppn "goP2PNetwork/p2p/proto"
 	"log"
-	"slices"
 	"time"
 
 	"google.golang.org/grpc"
@@ -30,22 +29,13 @@ func (n *Node) NodeRegisterClient()  {
       ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) 
       defer cancel()
 
-      peerPullMapJson, nodeRegisterError := c.PeerRegist(ctx, &ppn.PeerRegistRequest{Peer: string(LocalAddr)})
+      jsonNodeData, _ := json.Marshal(n.Data)
+      peerNodeDataJson, nodeRegisterError := c.PeerRegist(ctx, &ppn.PeerRegistRequest{Peer: string(jsonNodeData)})
 
       if nodeRegisterError == nil {
-          //log.Printf("\nRecived Map from Node %s: %s\n", PeerAddr, peerPullMapJson )  
-          peerMapData := NeighboursMapJsonUnmarshal(peerPullMapJson.Result)
-          fmt.Print(peerMapData.Address)
-          if !slices.Contains(n.Neighbours.Data, peerMapData.Address){
-            n.Mutex.Lock()
-            n.Neighbours.Data = append(n.Neighbours.Data, peerMapData.Address)
-
-            LocalNeighboursMap.Mutex.Lock()
-            LocalNeighboursMap.Data.MapPeer[n.Address] = *n.Neighbours
-            LocalNeighboursMap.Mutex.Unlock()
-            n.Mutex.Unlock()
-          }
-          LocalNeighboursMap.UpdateNeighboursMap(peerMapData.MapPeer, peerMapData.Address)
+          peerNodeData := NodeDataJsonUnmarshal(peerNodeDataJson.Result)
+          fmt.Print(peerNodeData.UID)
+          n.AddPeer(peerNodeData)
 
           done = true
       }else{
@@ -53,14 +43,15 @@ func (n *Node) NodeRegisterClient()  {
       }
       time.Sleep(time.Second * 10)
   }
-  n.EventGenerator()
 }
 
-func (m *NeighboursMap) NodeNeighbour(peerAddr string) {
+func (m *NetworkMap) NodeNeighbour(peerAddr string) {
 
 	conn, err := grpc.NewClient(peerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		log.Fatalf("Error connecting to server %s", err)
+		log.Printf("Error connecting to server %s", err)
+        // try to remove from linked nodes
+        LocalNode.RemovePeer(peerAddr)
 	}
 
 	c := ppn.NewP2PNetworkClient(conn)
@@ -69,28 +60,14 @@ func (m *NeighboursMap) NodeNeighbour(peerAddr string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second) 
 	defer cancel()
 
-	filteredMap := m.FilterMap()
-	nbmapJson, _ := json.Marshal(filteredMap)
-	//log.Printf("\nSending Map update to node %s: %s\n",PeerAddr, nbmapJson)
-	response, err := c.NeighbourList(ctx, &ppn.NeighbourListRequest{Peer: string(nbmapJson)})
-	if err == nil {
-		log.Printf(config.Cyan+"%s\n"+config.Reset, response.Result)
-	}	
-}
+    
+    m.Mutex.Lock()
+    entryMaxTime := IncrementTimestamp()  
+    m.Data.NodeMap[LocalNode.Data.UID] = entryMaxTime
+    nbmapJson, _ := json.Marshal(m.Data)
+    m.Mutex.Unlock()
+    
 
-//Filter The map to be sent to neighbours.
-//This filter consists in sending only maps by direct link nodes.
-func (m *NeighboursMap) FilterMap() NeighboursMapData {
-  // create new temporary NeighboursMapData struct to store filtered maps
-  filteredMap := NeighboursMapData{
-    Address: LocalNode.Address,
-    MapPeer: make(map[string]NeigbboursData),
-  }
-  m.Mutex.Lock()
-  filteredMap.MapPeer[LocalAddr] = m.Data.MapPeer[LocalAddr]
-  for i := range LocalNode.Neighbours.Data {
-    filteredMap.MapPeer[LocalNode.Neighbours.Data[i]] = m.Data.MapPeer[LocalNode.Neighbours.Data[i]]
-  }
-  m.Mutex.Unlock()
-  return filteredMap
+	c.NeighbourList(ctx, &ppn.NeighbourListRequest{Peer: string(nbmapJson)})
+
 }

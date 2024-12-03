@@ -10,18 +10,16 @@ import (
 	"google.golang.org/grpc"
 )
 
-//func NodeJsonUnmarshal(data string) Node {
-//	var node Node
-//	err := json.Unmarshal([]byte(data), &node)
-//	if err != nil {
-//		log.Fatalf("Error in Unmarshalling Node: %s", err)
-//	}
-//	return node
-//}
-
-
-func NeighboursJsonUnmarshal(data string) NeigbboursData {
-	var nbData NeigbboursData
+func NodeDataJsonUnmarshal(data string) NodeData {
+	var node NodeData
+	err := json.Unmarshal([]byte(data), &node)
+	if err != nil {
+		log.Fatalf("Error in Unmarshalling Node: %s", err)
+	}
+	return node
+}
+func NetworkMapDataJsonUnmarshal(data string) NetworkMapData {
+	var nbData NetworkMapData
 	err := json.Unmarshal([]byte(data), &nbData)
 	if err != nil {
 		log.Fatalf("Error in Unmarshalling Node: %s", err)
@@ -29,14 +27,6 @@ func NeighboursJsonUnmarshal(data string) NeigbboursData {
 	return nbData
 }
 
-func NeighboursMapJsonUnmarshal(data string) NeighboursMapData {
-	var nbMap NeighboursMapData
-	err := json.Unmarshal([]byte(data), &nbMap)
-	if err != nil {
-		log.Fatalf("Error in Unmarshalling NeighboursMap: %s", err)
-	}
-	return nbMap
-}
 
 func Server() {
 	flag.Parse()
@@ -48,7 +38,6 @@ func Server() {
 	server := grpc.NewServer()
 	//register server
 	ppn.RegisterP2PNetworkServer(server, &P2PNetworkServer{})
-	//logger.Info("P2P server listening at %v", lis.Addr())
 	log.Printf("P2P server listening at %v", lis.Addr())
 
 	if err := server.Serve(lis); err != nil {
