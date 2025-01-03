@@ -1,6 +1,22 @@
 # GoP2PNetwork
 
 This Project counts the Number of Nodes in a P2P Network
+
+# Table Of Contents
+- [GoP2PNetwork](#gop2pnetwork)
+      + [Implementation Requirements](#implementation-requirements)
+      + [How to build the project](#how-to-build-the-project)
+      + [How to execute the project](#how-to-execute-the-project)
+         - [Execution in physical nodes](#execution-in-physical-nodes)
+         - [Docker](#docker)
+            * [Clean up docker environment](#clean-up-docker-environment)
+      + [Results intrepertation](#results-intrepertation)
+            * [Server startup and Peer Registration](#server-startup-and-peer-registration)
+            * [Event generator](#event-generator)
+            * [Recive update message](#recive-update-message)
+            * [Peers map with timestamps](#peers-map-with-timestamps)
+            * [Node Count](#node-count)
+            * [Node removel](#node-removel)
 ### Implementation Requirements
 * Create a network of 6 peers (p1 to p6), running on different machines (m1 to m6), with
 the topology shown in the figure above.

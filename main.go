@@ -12,7 +12,7 @@ func cli() (string, string) {
 	id := flag.String("id", "", "Specify the Local Node ID")
 	neighbourAddress := flag.String("neighbourAddress", "", "Specify the Neighbour address")
 
-	help := flag.Bool("help", false, "Display help")
+	help := flag.Bool("help", false, "help")
 
 	// Parse flags
 	flag.Parse()
@@ -23,9 +23,6 @@ func cli() (string, string) {
 		os.Exit(0)
 	}
 
-	// Implement the functionality
-	fmt.Printf("id%s\n", *id)
-	fmt.Printf("neighbourAddress:%s\n", *neighbourAddress)
 	return *id, *neighbourAddress
 }
 
