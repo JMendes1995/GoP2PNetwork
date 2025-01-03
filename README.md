@@ -77,27 +77,27 @@ $ docker compose up -d
 
 ```bash
 $ docker exec -it gop2pnetwork-peer1-1 bash
-$ ./goP2PNetwork-linux --id m1 --neighbourAddress 10.10.1.2
+$ ./goP2PNetwork-linux --id m1 --neighboursAddress 10.10.1.2
 ```
 ```bash
 $ docker exec -it gop2pnetwork-peer2-1 bash
-$ ./goP2PNetwork-linux  --id m2 --neighbourAddress 10.10.1.1
+$ ./goP2PNetwork-linux  --id m2 --neighboursAddress 10.10.1.1,10.10.1.3,10.10.1.4
 ```
 ```bash
 $ docker exec -it gop2pnetwork-peer3-1 bash
-$ ./goP2PNetwork-linux  --id m3 --neighbourAddress 10.10.1.2
+$ ./goP2PNetwork-linux  --id m3 --neighboursAddress 10.10.1.2
 ```
 ```bash
 $ docker exec -it gop2pnetwork-peer4-1 bash
-$ ./goP2PNetwork-linux  --id m4 --neighbourAddress 10.10.1.2
+$ ./goP2PNetwork-linux  --id m4 --neighboursAddress 10.10.1.2,10.10.1.5,10.10.1.6
 ```
 ```bash
 $ docker exec -it gop2pnetwork-peer5-1 bash
-$ ./goP2PNetwork-linux --id m5 --neighbourAddress 10.10.1.4
+$ ./goP2PNetwork-linux --id m5 --neighboursAddress 10.10.1.4
 ```
 ```bash
 $ docker exec -it gop2pnetwork-peer6-1 bash
-$ ./goP2PNetwork-linux --id m6 --neighbourAddress 10.10.1.4
+$ ./goP2PNetwork-linux --id m6 --neighboursAddress 10.10.1.4
 ```
 
 ##### Clean up docker environment

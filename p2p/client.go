@@ -13,8 +13,8 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
-func (n *Node) NodeRegisterClient() {
-	conn, err := grpc.NewClient(PeerAddr+Port, grpc.WithTransportCredentials(insecure.NewCredentials()))
+func (n *Node) NodeRegisterClient(peerAddr string) {
+	conn, err := grpc.NewClient(peerAddr+Port, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Error connecting to server %s", err)
 	}
@@ -41,7 +41,7 @@ func (n *Node) NodeRegisterClient() {
 
 			done = true
 		} else {
-			log.Printf(config.Yellow+"Peer not ready %s"+config.Reset, PeerAddr+Port)
+			log.Printf(config.Yellow+"Peer not ready %s"+config.Reset, peerAddr+Port)
 		}
 		time.Sleep(time.Second * 5)
 	}

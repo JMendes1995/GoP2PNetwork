@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"goP2PNetwork/p2p"
 	"os"
+	"strings"
 )
 
 func cli() (string, string) {
 	// Define flags
 	id := flag.String("id", "", "Specify the Local Node ID")
-	neighbourAddress := flag.String("neighbourAddress", "", "Specify the Neighbour address")
+	neighboursAddress := flag.String("neighboursAddress", "", "Specify the list of NeighbourS addresses separated by comma")
 
 	help := flag.Bool("help", false, "help")
 
@@ -23,15 +24,15 @@ func cli() (string, string) {
 		os.Exit(0)
 	}
 
-	return *id, *neighbourAddress
+	return *id, *neighboursAddress
 }
 
 func main() {
-	id, neighbourAddress := cli()
+	id, neighboursAddress := cli()
 
 	localAddress, _ := p2p.GetLocalAddr()
 	p2p.LocalAddr = localAddress
-	p2p.PeerAddr = neighbourAddress
+	p2p.ListPeerAddr = strings.Split(neighboursAddress, ",")
 	p2p.Uid = id
 	p2p.LocalNode = p2p.Node{
 		Data: &p2p.NodeData{
@@ -48,7 +49,10 @@ func main() {
 	}
 
 	go p2p.Server()
-	go p2p.LocalNode.NodeRegisterClient()
+	for i := range p2p.ListPeerAddr {
+		go p2p.LocalNode.NodeRegisterClient(p2p.ListPeerAddr[i])
+	}
+
 	go p2p.LocalNetworkMap.CheckMapEntryExpiration()
 	go p2p.LocalNode.EventGenerator()
 	go p2p.LocalNetworkMap.CountNodes()

@@ -38,7 +38,7 @@ const (
 var (
 	LocalNode       Node
 	LocalNetworkMap NetworkMap
-	PeerAddr        string
+	ListPeerAddr    []string
 	LocalAddr       string
 	Uid             string
 )
@@ -60,7 +60,7 @@ func (s *P2PNetworkServer) NeighbourList(ctx context.Context, in *ppn.NeighbourL
 	return &ppn.NeighbourListResponse{Result: fmt.Sprintf("Neighbourlist %s updated", LocalAddr)}, nil
 }
 
-// Recive a gRPC with the peer node data (ID, ADDRESS and timestamp=0) 
+// Recive a gRPC with the peer node data (ID, ADDRESS and timestamp=0)
 // After adding the new node to the list Sende as response the node info
 func (s *P2PNetworkServer) PeerRegist(ctx context.Context, in *ppn.PeerRegistRequest) (*ppn.PeerRegistResponse, error) {
 	peerNodeData := NodeDataJsonUnmarshal(in.GetPeer())
@@ -76,8 +76,6 @@ func (s *P2PNetworkServer) PeerRegist(ctx context.Context, in *ppn.PeerRegistReq
 	return &ppn.PeerRegistResponse{Result: string(jsonNodeData)}, nil
 }
 
-
-
 func (m *NetworkMap) UpdateNetworkMap(node string, timeStamp int64) {
 	m.Mutex.Lock()
 	if m.Data.NodeMap[node] != timeStamp && m.Data.NodeMap[node] < timeStamp {
@@ -85,7 +83,6 @@ func (m *NetworkMap) UpdateNetworkMap(node string, timeStamp int64) {
 	}
 	m.Mutex.Unlock()
 }
-
 
 func (m *NetworkMap) CheckMapEntryExpiration() {
 	for {
@@ -119,4 +116,3 @@ func (m *NetworkMap) CountNodes() {
 		time.Sleep(time.Second * 30)
 	}
 }
-
