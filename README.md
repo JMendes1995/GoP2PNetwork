@@ -1,7 +1,7 @@
 # GoP2PNetwork
 
 This Project counts the Number of Nodes in a P2P Network
-### Requirements
+### Implementation Requirements
 * Create a network of 6 peers (p1 to p6), running on different machines (m1 to m6), with
 the topology shown in the figure above.
 * Peers must have a thread waiting for others to connect and register themselves. This is
@@ -36,7 +36,10 @@ To execute the project there is 2 possible ways.
 
 #### Execution in physical nodes
 Before executing the project, is required to pull the source code into the nodes that will be part of the network.
-Furthermore, is also require to execute the command passing 2 input parametes. The `--id <NodeID>` and `--neighbourAddress <NeighbourAddress>`.
+Furthermore, is also require to execute the command passing 2 input parametes:
+
+* `--id <NodeID>`
+* `--neighbourAddress <NeighbourAddress>`
 
 Example:
 ```bash
