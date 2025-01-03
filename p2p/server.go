@@ -27,12 +27,11 @@ func NetworkMapDataJsonUnmarshal(data string) NetworkMapData {
 	return nbData
 }
 
-
 func Server() {
 	flag.Parse()
-	lis, err := net.Listen("tcp", LocalAddr)
+	lis, err := net.Listen("tcp", LocalAddr+Port)
 	if err != nil {
-		log.Fatalf("failed to listen from calc server: %v", err)
+		log.Fatalf("failed to listen from server: %v", err)
 	}
 	//start grpc server
 	server := grpc.NewServer()

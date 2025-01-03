@@ -1,65 +1,122 @@
 package p2p
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"goP2PNetwork/config"
-	"goP2PNetwork/poisson"
+	ppn "goP2PNetwork/p2p/proto"
 	"log"
-	"math/rand"
+	"sync"
 	"time"
 )
 
+type Node struct {
+	Data       *NodeData
+	Neighbours []string
+	Mutex      sync.Mutex
+}
+type NodeData struct {
+	Address        string
+	UID            string `json:"UID"`
+	ValidTimestamp int64  `json:"ValidTimestampMap"`
+}
 
-func (n *Node) EventGenerator(){
-	seed := time.Now().UnixNano()
-	rng := rand.New(rand.NewSource(seed))
+type NetworkMapData struct {
+	UID     string           `json:"UID"`
+	NodeMap map[string]int64 `json:"NodeMap"`
+}
+type NetworkMap struct {
+	Data  *NetworkMapData
+	Mutex sync.Mutex
+}
 
-	lambda := 2.0 // rate of 2 updates per minute
-	poissonProcess := poisson.PoissonProcess{Lambda: lambda, Rng: rng}
-	totalRequests := 0
-	t := 1 // current minute
+const (
+	Port = ":50003"
+)
 
-	for {	
-		currentTime := 0.0
-		previousTime := 0.0
-		
-		nRequests := poissonProcess.PoissonRandom()
-		for i := 1; i <= nRequests; i++ {
-			totalRequests ++
+var (
+	LocalNode       Node
+	LocalNetworkMap NetworkMap
+	PeerAddr        string
+	LocalAddr       string
+	Uid             string
+)
 
-			log.Printf(config.Green+"Minute:%d Nrequests:%d"+config.Reset, t, nRequests)
+type P2PNetworkServer struct {
+	ppn.UnimplementedP2PNetworkServer
+}
+
+// reciebve
+func (s *P2PNetworkServer) NeighbourList(ctx context.Context, in *ppn.NeighbourListRequest) (*ppn.NeighbourListResponse, error) {
+	// sending result to client
+	nbMap := NetworkMapDataJsonUnmarshal(in.GetPeer())
+
+	fmt.Printf("Recived Update %s\nOld timestamp: %d\nNew Timestamp: %d\n", nbMap.UID, LocalNetworkMap.Data.NodeMap[nbMap.UID], nbMap.NodeMap[nbMap.UID])
+
+	for node, timeStamp := range nbMap.NodeMap {
+		LocalNetworkMap.UpdateNetworkMap(node, timeStamp)
+	}
+	return &ppn.NeighbourListResponse{Result: fmt.Sprintf("Neighbourlist %s updated", LocalAddr)}, nil
+}
+
+// Recive a gRPC with the peer node data (ID, ADDRESS and timestamp=0) 
+// After adding the new node to the list Sende as response the node info
+func (s *P2PNetworkServer) PeerRegist(ctx context.Context, in *ppn.PeerRegistRequest) (*ppn.PeerRegistResponse, error) {
+	peerNodeData := NodeDataJsonUnmarshal(in.GetPeer())
+	LocalNode.Mutex.Lock()
+	LocalNode.AddPeer(peerNodeData)
+
+	entryMaxTime := IncrementTimestamp()
+	LocalNode.Data.ValidTimestamp = entryMaxTime
+	jsonNodeData, _ := json.Marshal(LocalNode.Data)
+	LocalNode.Mutex.Unlock()
+
+	log.Printf(config.Cyan+"Regist new peer %s to local map\n"+config.Reset, peerNodeData.UID)
+	return &ppn.PeerRegistResponse{Result: string(jsonNodeData)}, nil
+}
 
 
-			// get the time for the next request to be executed
-			interArrivalTime := poissonProcess.ExponentialRandom()
-			previousTime = currentTime
-			currentTime = (interArrivalTime * 60) + currentTime
+
+func (m *NetworkMap) UpdateNetworkMap(node string, timeStamp int64) {
+	m.Mutex.Lock()
+	if m.Data.NodeMap[node] != timeStamp && m.Data.NodeMap[node] < timeStamp {
+		m.Data.NodeMap[node] = timeStamp
+	}
+	m.Mutex.Unlock()
+}
 
 
-			log.Printf(config.Green+"Request %d at %f seconds\n"+config.Reset, i, currentTime)
-			log.Printf(config.Green+"Sleep %.5f seconds...\n"+config.Reset, float64(currentTime-previousTime))
-			
-			delta := time.Duration(currentTime-previousTime) * time.Second
-			time.Sleep(delta)
-			n.PushUpdates()
-			if i == nRequests && currentTime < 60 {
-				log.Printf(config.Green+"Requests for the minute %d endend before finishing the 60s.\nWaiting %f seconds to complete the cycle of 60s....\n"+config.Reset, t, float64(60-currentTime))
-				time.Sleep((time.Duration(60-currentTime) * time.Second))
+func (m *NetworkMap) CheckMapEntryExpiration() {
+	for {
+		if len(m.Data.NodeMap) > 0 {
+			for uid, maxTime := range m.Data.NodeMap {
+				if maxTime <= time.Now().Unix() && uid != LocalNode.Data.UID && maxTime != 0 {
+					log.Printf(config.Yellow+"TTL reached for Address: %s with Maxtime: %s\n"+config.Reset, uid, time.Unix(maxTime, 0))
+
+					m.Mutex.Lock()
+					delete(m.Data.NodeMap, uid)
+					m.Mutex.Unlock()
+
+				}
 			}
-
-
 		}
-		fmt.Println()
-		log.Printf(config.Green+"Statistics: Total requests: %d Minutes spent: %d rate:%f\n"+config.Reset, totalRequests, t, float64(totalRequests)/float64(t))
-		t++
 		time.Sleep(time.Second * 5)
 	}
 }
 
-func (n *Node) PushUpdates(){
-	for i := range n.Neighbours {
-		if n.Neighbours[i] != n.Data.Address {
-			LocalNetworkMap.NodeNeighbour(n.Neighbours[i])
-		}	
+func (m *NetworkMap) CountNodes() {
+	for {
+		var nodesSlice []string
+
+		jsonLocalMap, _ := json.MarshalIndent(m.Data.NodeMap, "", "    ")
+		log.Printf("Local map: %s\n", config.Cyan+string(jsonLocalMap)+config.Reset)
+		for key := range m.Data.NodeMap {
+			nodesSlice = append(nodesSlice, key)
+		}
+
+		log.Printf(config.Blue+"Number nodes in the network: %d -> %s\n"+config.Reset, len(nodesSlice), nodesSlice)
+		time.Sleep(time.Second * 30)
 	}
 }
+

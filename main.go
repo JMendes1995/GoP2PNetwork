@@ -1,29 +1,60 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"goP2PNetwork/p2p"
+	"os"
 )
 
-func main(){
-    p2p.LocalNode = p2p.Node{
+func cli() (string, string) {
+	// Define flags
+	id := flag.String("id", "", "Specify the Local Node ID")
+	neighbourAddress := flag.String("neighbourAddress", "", "Specify the Neighbour address")
+
+	help := flag.Bool("help", false, "Display help")
+
+	// Parse flags
+	flag.Parse()
+
+	if *help {
+		fmt.Println("Usage: cli [options]")
+		flag.PrintDefaults()
+		os.Exit(0)
+	}
+
+	// Implement the functionality
+	fmt.Printf("id%s\n", *id)
+	fmt.Printf("neighbourAddress:%s\n", *neighbourAddress)
+	return *id, *neighbourAddress
+}
+
+func main() {
+	id, neighbourAddress := cli()
+
+	localAddress, _ := p2p.GetLocalAddr()
+	p2p.LocalAddr = localAddress
+	p2p.PeerAddr = neighbourAddress
+	p2p.Uid = id
+	p2p.LocalNode = p2p.Node{
 		Data: &p2p.NodeData{
-			UID: p2p.LocalAddr,
-			Address: p2p.LocalAddr,
+			UID:     id,
+			Address: localAddress,
 		},
 		Neighbours: make([]string, 0),
 	}
-    p2p.LocalNetworkMap = p2p.NetworkMap{
+	p2p.LocalNetworkMap = p2p.NetworkMap{
 		Data: &p2p.NetworkMapData{
-			UID: p2p.LocalAddr,
-			NodeMap:  make(map[string]int64),
+			UID:     p2p.Uid,
+			NodeMap: make(map[string]int64),
 		},
-    }
+	}
 
 	go p2p.Server()
 	go p2p.LocalNode.NodeRegisterClient()
 	go p2p.LocalNetworkMap.CheckMapEntryExpiration()
 	go p2p.LocalNode.EventGenerator()
 	go p2p.LocalNetworkMap.CountNodes()
-	
+	//
 	select {}
 }
